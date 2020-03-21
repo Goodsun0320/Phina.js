@@ -62,36 +62,33 @@ phina.define("MainScene", {
     this.superInit();
     // 背景色
     this.backgroundColor = 'black';
-    // アセット表示
-    Sprite('spaceship').addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(-7));
-    Sprite('bullet').addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(-5));
-    Sprite('explosion').addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(-3));
-    
-    // 敵
-    var enemy = Sprite('spaceship', 64, 64).addChildTo(this);
-    enemy.setPosition(this.gridX.center(), this.gridY.center());
-    // フレームアニメーションをアタッチ
-    FrameAnimation('spaceship').attachTo(enemy).gotoAndPlay('enemy');
-    // 敵弾
-    var enemybullet = Sprite('bullet', 64, 64).addChildTo(this);
-    enemybullet.setPosition(this.gridX.center(), this.gridY.center(1));
-    // フレームインデックス指定
-    enemybullet.frameIndex = 1;
-    // 自機ショット
-    var playerbullet = Sprite('bullet', 64, 64).addChildTo(this);
-    playerbullet.setPosition(this.gridX.center(), this.gridY.center(2));
-    playerbullet.frameIndex = 0;
     // プレイヤー
-    var player = Sprite('spaceship', 64, 64).addChildTo(this);
+    var player = Player().addChildTo(this);
     player.setPosition(this.gridX.center(), this.gridY.center(3));
-    FrameAnimation('spaceship').attachTo(player).gotoAndPlay('player');
-    // 爆発
-    var explosion = Sprite('explosion', 64, 64).addChildTo(this);
-    explosion.setPosition(this.gridX.center(), this.gridY.center(5));
-    FrameAnimation('explosion').attachTo(explosion).gotoAndPlay('explosion');
-    
   },
-  
+});
+/*
+ * プレイヤークラス
+ */
+phina.define("Player", {
+  // 継承
+  superClass: 'Sprite',
+  // 初期化
+  init: function() {
+    // 親クラス初期化
+    this.superInit('spaceship', 64, 64);
+    // フレームアニメーションをアタッチ
+    FrameAnimation('spaceship').attachTo(this).gotoAndPlay('player');
+    // 移動スピード
+    this.speed = 5;
+  },
+  // 毎フレーム更新処理
+  update: function(app) {
+    // 移動する向きを求める
+    var direction = app.keyboard.getKeyDirection();
+    // 移動する向きとスピードを代入する
+    this.moveBy(direction.x * this.speed, direction.y * this.speed);
+  },
 });
 /*
  * メイン処理
@@ -99,13 +96,17 @@ phina.define("MainScene", {
 phina.main(function() {
   // アプリケーションを生成
   var app = GameApp({
+    // MainSceneから開始
+    startLabel: 'main',
     // アセット指定
     assets: ASSETS,
-    // MainScene から開始
-    startLabel: 'main',
   });
-  // fps表示
-  //app.enableStats();
   // 実行
   app.run();
+  // 無理やり canvas にフォーカス
+  ;(function() {
+    var canvas = app.domElement;
+    canvas.setAttribute('tabindex', '0');
+    canvas.focus();
+  })();
 });
