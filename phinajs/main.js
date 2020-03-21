@@ -8,12 +8,46 @@ var ASSETS = {
     'bullet': './assets/image/bullet.png',
     'explosion': './assets/image/explosion.png',
   },
-  /*
+  
   spritesheet: {
-    "spaceship": './spritesheet/ships.json',
-    'explosion': './spritesheet/explosion.json',
+    "spaceship": 
+    {
+      "frame": {
+        "width": 64,
+        "height": 64,
+        "cols": 4,
+        "rows": 4
+      },
+      "animations" : {
+        "player": {
+          "frames": [0,1,2,3,2,1],
+          "next": "player",
+          "frequency": 1
+        },
+        "enemy": {
+          "frames": [4,5,6,7,6,5],
+          "next": "enemy",
+          "frequency": 1
+        }
+      }
+    },
+    'explosion': 
+    {
+      "frame": {
+        "width": 64,
+        "height": 64,
+        "cols": 10,
+        "rows": 1
+      },
+      "animations" : {
+        "explosion": {
+          "frames": [0,1,2,3,4,5,6,7,8,9],
+          "frequency": 1
+        }
+      }
+    },
   },
-  */
+  
 };
 
 /*
@@ -32,7 +66,7 @@ phina.define("MainScene", {
     Sprite('spaceship').addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(-7));
     Sprite('bullet').addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(-5));
     Sprite('explosion').addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(-3));
-    /*
+    
     // 敵
     var enemy = Sprite('spaceship', 64, 64).addChildTo(this);
     enemy.setPosition(this.gridX.center(), this.gridY.center());
@@ -55,7 +89,7 @@ phina.define("MainScene", {
     var explosion = Sprite('explosion', 64, 64).addChildTo(this);
     explosion.setPosition(this.gridX.center(), this.gridY.center(5));
     FrameAnimation('explosion').attachTo(explosion).gotoAndPlay('explosion');
-    */
+    
   },
   
 });
