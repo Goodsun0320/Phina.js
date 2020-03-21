@@ -1,5 +1,21 @@
 // グローバルに展開
 phina.globalize();
+
+// アセット
+var ASSETS = {
+  image: {
+    'spaceship': './assets/image/spaceship.png',
+    'bullet': './assets/image/bullet.png',
+    'explosion': './assets/image/explosion.png',
+  },
+  /*
+  spritesheet: {
+    "spaceship": './spritesheet/ships.json',
+    'explosion': './spritesheet/explosion.json',
+  },
+  */
+};
+
 /*
  * メインシーン
  */
@@ -12,12 +28,36 @@ phina.define("MainScene", {
     this.superInit();
     // 背景色
     this.backgroundColor = 'black';
-    // 以下にコードを書いていく
+    // アセット表示
+    Sprite('spaceship').addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(-7));
+    Sprite('bullet').addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(-5));
+    Sprite('explosion').addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(-3));
+    /*
+    // 敵
+    var enemy = Sprite('spaceship', 64, 64).addChildTo(this);
+    enemy.setPosition(this.gridX.center(), this.gridY.center());
+    // フレームアニメーションをアタッチ
+    FrameAnimation('spaceship').attachTo(enemy).gotoAndPlay('enemy');
+    // 敵弾
+    var enemybullet = Sprite('bullet', 64, 64).addChildTo(this);
+    enemybullet.setPosition(this.gridX.center(), this.gridY.center(1));
+    // フレームインデックス指定
+    enemybullet.frameIndex = 1;
+    // 自機ショット
+    var playerbullet = Sprite('bullet', 64, 64).addChildTo(this);
+    playerbullet.setPosition(this.gridX.center(), this.gridY.center(2));
+    playerbullet.frameIndex = 0;
+    // プレイヤー
+    var player = Sprite('spaceship', 64, 64).addChildTo(this);
+    player.setPosition(this.gridX.center(), this.gridY.center(3));
+    FrameAnimation('spaceship').attachTo(player).gotoAndPlay('player');
+    // 爆発
+    var explosion = Sprite('explosion', 64, 64).addChildTo(this);
+    explosion.setPosition(this.gridX.center(), this.gridY.center(5));
+    FrameAnimation('explosion').attachTo(explosion).gotoAndPlay('explosion');
+    */
   },
-  // 毎フレーム更新処理
-  update: function() {
-    // 以下にコードを書いていく  
-  },
+  
 });
 /*
  * メイン処理
@@ -25,6 +65,8 @@ phina.define("MainScene", {
 phina.main(function() {
   // アプリケーションを生成
   var app = GameApp({
+    // アセット指定
+    assets: ASSETS,
     // MainScene から開始
     startLabel: 'main',
   });
