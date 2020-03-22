@@ -62,9 +62,12 @@ phina.define("MainScene", {
     this.superInit();
     // 背景色
     this.backgroundColor = 'black';
+    // グループ
+    playerBulletGroup = DisplayElement().addChildTo(this);
     // プレイヤー
-    var player = Player().addChildTo(this);
-    player.setPosition(this.gridX.center(), this.gridY.center(3));
+    Player().addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(3));
+    // プレイヤーの弾作成
+    PlayerBullet().addChildTo(this).setPosition(this.gridX.center(), this.gridY.center());
   },
 });
 /*
@@ -90,6 +93,29 @@ phina.define("Player", {
     this.moveBy(direction.x * this.speed, direction.y * this.speed);
   },
 });
+/*
+* プレイヤーの弾クラス
+*/
+phina.define("PlayerBullet", {
+ // 継
+ superClass: 'DisplayElement',
+ // 初期化
+ init: function() {
+   // 親クラス初期化
+   this.superInit();
+   // スピード
+   var speed = 10;
+   var self = this;
+   // 左右の弾
+   [-10, 10].each(function(dx) {
+    var playerbullet = Sprite('bullet', 64, 64).addChildTo(self).setPosition(self.x + dx, self.y);
+    playerbullet.frameIndex = 0;
+   });
+   // 上向き速度を与える
+   this.physical.velocity.y = -speed;
+ },
+});
+
 /*
  * メイン処理
  */
