@@ -71,8 +71,9 @@ phina.define("MainScene", {
     playerBulletGroup = DisplayElement().addChildTo(this);
     enemyBulletGroup = DisplayElement().addChildTo(this);
     this.enemyGroup = DisplayElement().addChildTo(this);
+    this.playerGroup = DisplayElement().addChildTo(this);
     // プレイヤー
-    this.player = Player().addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(3));
+    Player().addChildTo(this.playerGroup).setPosition(this.gridX.center(), this.gridY.center(3));
     // 敵
     Enemy().addChildTo(this.enemyGroup).setPosition(this.gridX.center(-3), this.gridY.center(-2));
     // 弾を発射できない敵
@@ -82,15 +83,17 @@ phina.define("MainScene", {
   },
   // 毎フレーム処理
   update: function() {
-    // 敵の弾とプレイヤー
+    // 当たり判定
     this.hitTestBulletToPlayer();
+    this.hitTestEnemyToPlayer();
+    this.hitTestBuleetToEnemy();
   },
   // 敵の弾とプレイヤーの当たり判定
   hitTestBulletToPlayer: function() {
     var self = this;
-    var player = this.player;
 
     enemyBulletGroup.children.each(function(bullet) {
+      self.playerGroup.children.each(function(player) {
       // 当たり判定用の矩形
       var r1 = bullet.collider.getAbsoluteRect();
       var r2 = player.collider.getAbsoluteRect();
@@ -103,6 +106,47 @@ phina.define("MainScene", {
         // プレイヤー削除
         player.remove();
       }
+      });
+    });
+  },
+  // 敵とプレイヤーの当たり判定
+  hitTestEnemyToPlayer: function() {
+    var self = this;
+
+    this.enemyGroup.children.each(function(enemy) {
+      self.playerGroup.children.each(function(player) {
+        // 当たり判定用の矩形
+        var r1 = enemy.collider.getAbsoluteRect();
+        var r2 = player.collider.getAbsoluteRect();
+        // ヒットなら
+        if (Collision.testRectRect(r1, r2)) {
+          // 爆発表示
+          Explosion().addChildTo(self).setPosition(player.x, player.y);
+          // プレイヤー削除
+          player.remove();
+        }
+      });
+    });
+  },
+  // プレイヤーの弾と敵の当たり判定
+  hitTestBuleetToEnemy: function() {
+    var self = this;
+
+    playerBulletGroup.children.each(function(bullet) {
+      self.enemyGroup.children.each(function(enemy) {
+        // 当たり判定用の矩形
+        var r1 = bullet.collider.getAbsoluteRect();
+        var r2 = enemy.collider.getAbsoluteRect();
+        // ヒットなら
+        if (Collision.testRectRect(r1, r2)) {
+          // 弾削除
+          bullet.remove();
+          // 爆発表示
+          Explosion().addChildTo(self).setPosition(enemy.x, enemy.y);
+          // 敵削除
+          enemy.remove();
+        }
+      });
     });
   },
 });
@@ -133,7 +177,7 @@ phina.define("Player", {
                 .wait(shotDelay)
                 .setLoop(true); 
   },
-  // 弾発射
+    // 弾発射
   shot: function() {
     var self = this;
     // 左右の弾
@@ -180,6 +224,15 @@ phina.define("Enemy", {
                 .wait(shotDelay)
                 .setLoop(true);
   },
+  // 毎フレーム更新処理
+  update: function() {
+    // 機体の移動
+    this.move(Vector2.DOWN);
+    // 画面下に出たら削除
+    if (this.top > SCREEN_RECT.bottom) {
+      this.remove();
+    }
+  },
   // 弾発射
   shot: function() {
     var self = this;
@@ -187,7 +240,7 @@ phina.define("Enemy", {
     [-20, 0, 20].each(function(degree) {
       // 弾作成
       var bullet = EnemyBullet(4).addChildTo(enemyBulletGroup);
-      bullet.setPosition(self.x, self.y);
+      bullet.setPosition(self.x, self.y).setFrameIndex(1);
       // 発射方向を決める
       var deg = self.rotation + degree + 90;
       // 角度と大きさからベクトル作成
@@ -195,15 +248,6 @@ phina.define("Enemy", {
       // ベクトルを代入
       bullet.physical.velocity = vec;
     });
-  },
-  // 毎フレーム更新処理
-  update: function() {
-    // 機体の移動
-    this.move(Vector2.DOWN);
-        // 画面下に出たら削除
-        if (this.top > SCREEN_RECT.bottom) {
-          this.remove();
-        }
   },
 });
 /*
@@ -246,6 +290,13 @@ phina.define("PlayerBullet", {
     // 上向き速度を与える
     this.physical.velocity.y = -speed;
   },
+    // 毎フレーム更新処理
+  update: function() {
+    // 画面下に出たら削除
+    if (this.top > SCREEN_RECT.bottom) {
+      this.remove();
+    }
+  },
 });
 /*
  * 敵の弾クラス
@@ -266,6 +317,13 @@ phina.define("EnemyBullet", {
       height: 10,
     }).addChildTo(this);
   },
+  // 毎フレーム更新処理
+  update: function() {
+    // 画面下に出たら削除
+    if (this.top > SCREEN_RECT.bottom) {
+      this.remove();
+    }
+  },
 });
 /*
  * 爆発クラス
@@ -278,7 +336,14 @@ phina.define("Explosion", {
     // 親クラス初期化
     this.superInit('explosion', 64, 64);
     // フレームアニメーションをアタッチ
-    FrameAnimation('explosion').attachTo(this).gotoAndPlay('explosion');
+    this.anim = FrameAnimation('explosion').attachTo(this).gotoAndPlay('explosion');
+  },
+  // 更新処理
+  update: function() {
+    // フレームアニメーションが終了したら自身を削除
+    if (this.anim.finished) {
+      this.remove();
+    }
   },
 });
 /*
@@ -296,6 +361,7 @@ phina.define("Collider", {
       fill: null,
       stroke: 'red',
     });
+    // 非表示
     this.hide();
   },
   // コライダーの絶対座標の矩形
