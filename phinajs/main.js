@@ -53,6 +53,7 @@ var ASSETS = {
 // グローバル変数
 var playerBulletGroup = null;
 var enemyBulletGroup = null;
+var SCREEN_RECT = Rect(0, 0, 640, 960); // 画面の矩形
 
 /*
  * メインシーン
@@ -69,11 +70,140 @@ phina.define("MainScene", {
     // グループ
     playerBulletGroup = DisplayElement().addChildTo(this);
     enemyBulletGroup = DisplayElement().addChildTo(this);
+    this.enemyGroup = DisplayElement().addChildTo(this);
     // プレイヤー
-    Player().addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(3));
+    this.player = Player().addChildTo(this).setPosition(this.gridX.center(), this.gridY.center(3));
     // 敵
-    Enemy().addChildTo(this).setPosition(this.gridX.center(-3), this.gridY.center(-2));
-    Enemy().addChildTo(this).setPosition(this.gridX.center(3), this.gridY.center(-2));
+    Enemy().addChildTo(this.enemyGroup).setPosition(this.gridX.center(-3), this.gridY.center(-2));
+    // 弾を発射できない敵
+    Enemy({
+      canShot: false,
+    }).addChildTo(this.enemyGroup).setPosition(this.gridX.center(3), this.gridY.center(-2));
+  },
+  // 毎フレーム処理
+  update: function() {
+    // 敵の弾とプレイヤー
+    this.hitTestBulletToPlayer();
+  },
+  // 敵の弾とプレイヤーの当たり判定
+  hitTestBulletToPlayer: function() {
+    var self = this;
+    var player = this.player;
+
+    enemyBulletGroup.children.each(function(bullet) {
+      // 当たり判定用の矩形
+      var r1 = bullet.collider.getAbsoluteRect();
+      var r2 = player.collider.getAbsoluteRect();
+      // ヒットなら
+      if (Collision.testRectRect(r1, r2)) {
+        // 弾削除
+        bullet.remove();
+        // 爆発表示
+        Explosion().addChildTo(self).setPosition(player.x, player.y);
+        // プレイヤー削除
+        player.remove();
+      }
+    });
+  },
+});
+/*
+ * プレイヤークラス
+ */
+phina.define("Player", {
+  // 継承
+  superClass: 'SpaceShip',
+  // 初期化
+  init: function() {
+    // 親クラス初期化
+    this.superInit({ speed: 5 });
+    // フレームアニメーション指定
+    this.anim.gotoAndPlay('player');
+    // 当たり判定用矩形
+    this.collider = Collider({
+      width: 20,
+      height: 20,
+    }).addChildTo(this);
+    // 弾の発射間隔
+    var shotDelay = 1000;
+    // 一定間隔で弾を発射
+    this.tweener.clear()
+                .call(function() {
+                  this.shot();
+                }, this)
+                .wait(shotDelay)
+                .setLoop(true); 
+  },
+  // 弾発射
+  shot: function() {
+    var self = this;
+    // 左右の弾
+    [-10, 10].each(function(dx) {
+      var bullet = PlayerBullet().addChildTo(playerBulletGroup);
+      bullet.setPosition(self.x + dx, self.y).setFrameIndex(0);
+    });
+  },
+  // 毎フレーム更新処理
+  update: function(app) {
+    // 移動する向きを求める
+    var direction = app.keyboard.getKeyDirection();
+    // 機体の移動
+    this.move(direction);
+  },
+});
+/*
+ * 敵クラス
+ */
+phina.define("Enemy", {
+  // 継承
+  superClass: 'SpaceShip',
+  // 初期化
+  init: function(param) {
+    // 親クラス初期化
+    this.superInit({ speed: 0.5 });
+    // フレームアニメーション指定
+    this.anim.gotoAndPlay('enemy');
+    // 当たり判定用矩形
+    this.collider = Collider({
+      width: 40,
+      height: 40,
+    }).addChildTo(this);
+    // 弾を発射できるか
+    var canShot = (param && param.canShot !== undefined) ? param.canShot : true;
+    if (!canShot) return;
+    // 弾の発射間隔
+    var shotDelay = 6000;
+    // 一定間隔で弾を発射
+    this.tweener.clear()
+                .call(function() {
+                  this.shot();
+                }, this)
+                .wait(shotDelay)
+                .setLoop(true);
+  },
+  // 弾発射
+  shot: function() {
+    var self = this;
+    // 弾
+    [-20, 0, 20].each(function(degree) {
+      // 弾作成
+      var bullet = EnemyBullet(4).addChildTo(enemyBulletGroup);
+      bullet.setPosition(self.x, self.y);
+      // 発射方向を決める
+      var deg = self.rotation + degree + 90;
+      // 角度と大きさからベクトル作成
+      var vec = Vector2().fromDegree(deg, bullet.speed);
+      // ベクトルを代入
+      bullet.physical.velocity = vec;
+    });
+  },
+  // 毎フレーム更新処理
+  update: function() {
+    // 機体の移動
+    this.move(Vector2.DOWN);
+        // 画面下に出たら削除
+        if (this.top > SCREEN_RECT.bottom) {
+          this.remove();
+        }
   },
 });
 /*
@@ -96,18 +226,77 @@ phina.define("SpaceShip", {
     this.moveBy(direction.x * this.speed, direction.y * this.speed);
   },
 });
-
+/*
+ * プレイヤーの弾クラス
+ */
+phina.define("PlayerBullet", {
+  // 継
+  superClass: 'Sprite',
+  // 初期化
+  init: function() {
+    // 親クラス初期化
+    this.superInit('bullet', 64, 64);
+    // スピード
+    var speed = 10;
+    // 当たり判定用のコライダー
+    this.collider = Collider({
+      width: 10,
+      height: 30,
+    }).addChildTo(this);
+    // 上向き速度を与える
+    this.physical.velocity.y = -speed;
+  },
+});
+/*
+ * 敵の弾クラス
+ */
+phina.define("EnemyBullet", {
+  // 継承
+  superClass: 'Sprite',
+  // 初期化
+  init: function() {
+    // 親クラス初期化
+    this.superInit('bullet', 64, 64);
+    this.setFrameIndex(1);
+    // スピード
+    this.speed = 10;
+    // 当たり判定用のコライダー
+    this.collider = Collider({
+      width: 10,
+      height: 10,
+    }).addChildTo(this);
+  },
+});
+/*
+ * 爆発クラス
+ */
+phina.define("Explosion", {
+  // 継承
+  superClass: 'Sprite',
+  // 初期化
+  init: function(param) {
+    // 親クラス初期化
+    this.superInit('explosion', 64, 64);
+    // フレームアニメーションをアタッチ
+    FrameAnimation('explosion').attachTo(this).gotoAndPlay('explosion');
+  },
+});
+/*
+ * コライダークラス
+ */
 phina.define("Collider", {
   // 継承
   superClass: 'RectangleShape',
   // 初期化
   init: function(param) {
+    // 親クラス初期化
     this.superInit({
       width: param.width,
       height: param.height,
       fill: null,
       stroke: 'red',
     });
+    this.hide();
   },
   // コライダーの絶対座標の矩形
   getAbsoluteRect: function() {
@@ -116,131 +305,6 @@ phina.define("Collider", {
     return Rect(x, y, this.width, this.height);
   },
 });
-
-/*
- * プレイヤークラス
- */
-phina.define("Player", {
-  // 継承
-  superClass: 'SpaceShip',
-  // 初期化
-  init: function() {
-    // 親クラス初期化
-    this.superInit({speed: 5 });
-    // フレームアニメーションをアタッチ
-    this.anim.gotoAndPlay('player');
-    // 当たり判定
-    this.collider = Collider({
-      width: 20,
-      height: 20,
-    }).addChildTo(this);
-
-    // 発射感覚
-    var shotDelay = 1000;
-    
-    // 一定間隔で弾を発射
-    this.tweener.clear()
-                .call(function() {
-                  this.shot();
-                }, this)
-                .wait(shotDelay)
-                .setLoop(true); 
-  },
-  // 弾を発射
-  shot: function() {
-    PlayerBullet().addChildTo(playerBulletGroup).setPosition(this.x, this.y);
-  },
-  // 毎フレーム更新処理
-  update: function(app) {
-    // 移動する向きを求める
-    var direction = app.keyboard.getKeyDirection();
-    // 移動する向きとスピードを代入する
-    this.moveBy(direction.x * this.speed, direction.y * this.speed);
-  },
-});
-
-/*
- * 敵クラス
- */
-phina.define("Enemy", {
-  // 継承
-  superClass: 'SpaceShip',
-  // 初期化
-  init: function() {
-    // 親クラス初期化
-    this.superInit({ speed: 0.5 });
-    // フレームアニメーション指定
-    this.anim.gotoAndPlay('enemy');
-    //
-    var shotDelay = 6000;
-    //
-    this.tweener.clear()
-                .call(function() {
-                  this.shot();
-                }, this)
-                .wait(shotDelay)
-                .setLoop(true);
-  },
-  // 弾発射
-  shot: function() {
-    EnemyBullet(this.rotation).addChildTo(enemyBulletGroup).setPosition(this.x, this.y);
-  },
-  // 毎フレーム更新処理
-  update: function() {
-    // 機体の移動
-    this.move(Vector2.DOWN);
-  },
-});
-
-/*
-* プレイヤーの弾クラス
-*/
-phina.define("PlayerBullet", {
- // 継
- superClass: 'DisplayElement',
- // 初期化
- init: function() {
-   // 親クラス初期化
-   this.superInit();
-   // スピード
-   var speed = 10;
-   var self = this;
-   // 左右の弾
-   [-10, 10].each(function(dx) {
-    Sprite('bullet', 64, 64).addChildTo(self).setPosition(self.x + dx, self.y).setFrameIndex(0);
-   });
-   // 上向き速度を与える
-   this.physical.velocity.y = -speed;
- },
-});
-
-/*
- * 敵の弾クラス
- */
-phina.define("EnemyBullet", {
-  // 継承
-  superClass: 'DisplayElement',
-  // 初期化
-  init: function(rotation) {
-    // 親クラス初期化
-    this.superInit();
-    // スピード
-    var speed = 10;
-    var self = this;
-    // 弾
-    [-20, 0, 20].each(function(degree) {
-      // 弾作成
-      var bullet = Sprite('bullet', 64, 64).addChildTo(self).setFrameIndex(1);
-      // 発射方向を決める
-      var deg = rotation + degree + 90;
-      // 角度と大きさからベクトル作成
-      var vec = Vector2().fromDegree(deg, speed);
-      // ベクトルを代入
-      bullet.physical.velocity = vec;
-    });
-  },
-});
-
 /*
  * メイン処理
  */
@@ -259,5 +323,5 @@ phina.main(function() {
     var canvas = app.domElement;
     canvas.setAttribute('tabindex', '0');
     canvas.focus();
-  })();
+  })(); 
 });
