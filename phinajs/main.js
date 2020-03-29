@@ -95,6 +95,7 @@ phina.define("MainScene", {
     enemyBulletGroup = DisplayElement().addChildTo(this);
     this.enemyGroup = DisplayElement().addChildTo(this);
     this.playerGroup = DisplayElement().addChildTo(this);
+    this.isCountDown = true;
     // プレイヤー
     Player().addChildTo(this.playerGroup).setPosition(this.gridX.center(), this.gridY.center(3));
     // 敵
@@ -106,6 +107,11 @@ phina.define("MainScene", {
   },
   // 毎フレーム処理
   update: function() {
+    if(this.isCountDown) {
+      this.isCountDown = false;
+      this.app.pushScene(CountDownScene());
+    }
+    
     // 当たり判定
     this.hitTestBulletToPlayer();
     this.hitTestEnemyToPlayer();
@@ -128,6 +134,8 @@ phina.define("MainScene", {
         Explosion().addChildTo(self).setPosition(player.x, player.y);
         // プレイヤー削除
         player.remove();
+        self.exit();
+        
       }
       });
     });
@@ -394,6 +402,34 @@ phina.define("Collider", {
     return Rect(x, y, this.width, this.height);
   },
 });
+
+/*
+* カウントダウン
+*/
+phina.define("CountDownScene", {
+  superClass: 'DisplayScene',
+  init: function() {
+    this.superInit();
+    this.backgroundColor = 'rgba(0,0,0,0.7)';
+
+    this.label = Label({
+      text: '',
+      fill: 'white',
+      fontSize: 100,
+    }).addChildTo(this).setPosition(this.gridX.center(), this.gridY.center());
+    this.time = 0;
+  },
+  update: function(app) {
+    this.time -= app.deltaTime;
+    var t = Math.ceil(this.time / 1000) + 3;
+    if (t > 0) {
+      this.label.text = t;
+    } else {
+      this.exit();
+    }
+  }
+});
+
 /*
  * メイン処理
  */
