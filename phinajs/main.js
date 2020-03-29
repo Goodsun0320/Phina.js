@@ -56,6 +56,29 @@ var enemyBulletGroup = null;
 var SCREEN_RECT = Rect(0, 0, 640, 960); // 画面の矩形
 
 /*
+* タイトルシーン
+*/
+phina.define("TitleScene", {
+  // 継承
+  superClass: 'DIsplayScene',
+  // 初期化
+  init: function() {
+    // 親クラス初期化
+    this.superInit();
+    this.backgroundColor = 'black';
+
+    Label({
+      text: 'Title',
+      fontSize: 48,
+      fill: 'white',
+    }).addChildTo(this).setPosition(this.gridX.center(), this.gridY.center());
+  },
+  onpointstart: function() {
+    this.exit();
+  },
+});
+
+/*
  * メインシーン
  */
 phina.define("MainScene", {
@@ -377,8 +400,8 @@ phina.define("Collider", {
 phina.main(function() {
   // アプリケーションを生成
   var app = GameApp({
-    // MainSceneから開始
-    startLabel: 'main',
+    // TitleSceneから開始
+    startLabel: 'title',
     // アセット指定
     assets: ASSETS,
   });
