@@ -60,7 +60,7 @@ var SCREEN_RECT = Rect(0, 0, 640, 960); // 画面の矩形
 */
 phina.define("TitleScene", {
   // 継承
-  superClass: 'DIsplayScene',
+  superClass: 'DisplayScene',
   // 初期化
   init: function() {
     // 親クラス初期化
@@ -401,7 +401,19 @@ phina.main(function() {
   // アプリケーションを生成
   var app = GameApp({
     // TitleSceneから開始
-    startLabel: 'title',
+    startLabel: 'titleScene',
+    scenes: [
+      {
+        className: 'TitleScene',
+        label: 'titleScene',
+        nextLabel: 'mainScene',
+      },
+      {
+        className: 'MainScene',
+        label: 'mainScene',
+        nextLabel: 'titleScene',
+      },
+    ],
     // アセット指定
     assets: ASSETS,
   });
